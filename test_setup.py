@@ -10,13 +10,13 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-def test_imports():
-    """Test if all required packages can be imported."""
+def test_imports():    """Test if all required packages can be imported."""
     print("🧪 Testing package imports...")
     try:
         import requests
         print("✅ requests")
-          from googleapiclient.discovery import build
+        
+        from googleapiclient.discovery import build
         print("✅ google-api-python-client")
         
         from youtube_transcript_api import YouTubeTranscriptApi

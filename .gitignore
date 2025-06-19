@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -19,8 +20,30 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
 # Environment variables
 .env
+.env.local
+.env.production
+
+# Firebase
+firebase-debug.log
+firebase-debug.*.log
+*-debug.log
+*-error.log
+firebase.json
+.firebaserc
+.firebase/
+
+# Service Account Keys (Security)
+*service-account*.json
+*firebase-key*.json
+credentials.json
 
 # IDE
 .vscode/
@@ -28,16 +51,31 @@ wheels/
 *.swp
 *.swo
 *~
-.github
 
 # OS
 .DS_Store
 Thumbs.db
+.directory
 
 # Output files
-output/*.json
-output/*.html
-output/*.md
+output/
+generated/
+*.json
+*.html
+*.md
+!README.md
+!FIREBASE_INTEGRATION.md
 
 # Logs
 *.log
+logs/
+
+# Temporary files
+temp/
+tmp/
+.temp/
+.tmp/
+
+# Test files
+test_output/
+test_results/
