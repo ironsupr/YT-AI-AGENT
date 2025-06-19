@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Playlist Learning Module Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📚 YouTube Playlist Learning Module Generator</h1>
+            <p class="subtitle">Transform YouTube playlists into structured learning modules with AI</p>
+        </header>
+
+        <main class="main">
+            <div class="form-section">
+                <div class="input-group">
+                    <label for="playlist-url" class="input-label">
+                        YouTube Playlist URL
+                    </label>
+                    <input 
+                        type="url" 
+                        id="playlist-url" 
+                        class="url-input" 
+                        placeholder="https://www.youtube.com/playlist?list=..."
+                        required
+                    >
+                    <div id="url-validation" class="validation-message"></div>
+                </div>
+
+                <div class="settings-group">
+                    <div class="setting-item">
+                        <label for="max-videos" class="setting-label">
+                            Maximum Videos
+                        </label>
+                        <select id="max-videos" class="setting-select">
+                            <option value="10">10 videos</option>
+                            <option value="20" selected>20 videos</option>
+                            <option value="30">30 videos</option>
+                            <option value="50">50 videos</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="generate-btn" class="generate-btn" disabled>
+                    <span class="btn-text">Generate Learning Modules</span>
+                    <span class="btn-loader" style="display: none;">🔄 Processing...</span>
+                </button>
+            </div>
+
+            <!-- Firebase Features Section -->
+            <div class="firebase-section" id="firebase-section" style="display: none;">
+                <h3>🔥 Saved Playlists</h3>
+                <div class="firebase-controls">
+                    <div class="search-group">
+                        <input 
+                            type="text" 
+                            id="search-input" 
+                            class="search-input" 
+                            placeholder="Search saved playlists..."
+                        >
+                        <button id="search-btn" class="search-btn">Search</button>
+                    </div>
+                    <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+                </div>
+
+                <div id="playlists-container" class="playlists-container">
+                    <div id="playlists-loading" class="loading-state">
+                        Loading saved playlists...
+                    </div>
+                    <div id="playlists-list" class="playlists-list"></div>
+                    <div id="playlists-empty" class="empty-state" style="display: none;">
+                        No saved playlists found. Process a playlist to save it!
+                    </div>
+                </div>
+            </div>
+
+            <div id="progress-section" class="progress-section" style="display: none;">
+                <div class="progress-header">
+                    <h3>🚀 Generating Your Learning Modules</h3>
+                    <p id="progress-text">Initializing...</p>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div class="progress-steps">
+                    <div class="step" id="step-1">
+                        <span class="step-icon">📥</span>
+                        <span class="step-text">Extracting Playlist Data</span>
+                    </div>
+                    <div class="step" id="step-2">
+                        <span class="step-icon">🧠</span>
+                        <span class="step-text">Analyzing Content with AI</span>
+                    </div>
+                    <div class="step" id="step-3">
+                        <span class="step-icon">📖</span>
+                        <span class="step-text">Generating Learning Modules</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-section" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>🎉 Your Learning Course is Ready!</h2>
+                </div>
+                
+                <div id="course-overview" class="course-overview">
+                    <!-- Course overview will be populated by JavaScript -->
+                </div>
+
+                <div class="download-section">
+                    <h3>📁 Download Your Course Materials</h3>
+                    <div class="download-buttons">
+                        <a href="#" id="download-html" class="download-btn">
+                            📄 Interactive HTML Guide
+                        </a>
+                        <a href="#" id="download-json" class="download-btn">
+                            📊 Course Data (JSON)
+                        </a>
+                        <a href="#" id="download-md" class="download-btn">
+                            📝 Markdown Guide
+                        </a>
+                    </div>
+                </div>
+
+                <div id="modules-preview" class="modules-preview">
+                    <!-- Modules preview will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div id="error-section" class="error-section" style="display: none;">
+                <div class="error-message">
+                    <h3>❌ Oops! Something went wrong</h3>
+                    <p id="error-text"></p>
+                    <button id="retry-btn" class="retry-btn">Try Again</button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="feature-list">
+                    <div class="feature">
+                        <span class="feature-icon">🎯</span>
+                        <span>AI-Powered Analysis</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">📚</span>
+                        <span>Structured Learning</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">⚡</span>
+                        <span>Instant Generation</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">📱</span>
+                        <span>Multiple Formats</span>
+                    </div>
+                </div>
+                <p class="footer-text">
+                    Powered by OpenAI GPT and YouTube Data API
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
