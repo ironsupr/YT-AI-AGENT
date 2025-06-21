@@ -18,6 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 from src.youtube_extractor import YouTubeExtractor
 from src.content_analyzer import ContentAnalyzer
+from src.enhanced_content_analyzer import EnhancedContentAnalyzer
 from src.module_generator import ModuleGenerator
 from src.firebase_service import FirebaseService
 from src.utils import validate_youtube_url
@@ -36,13 +37,14 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
 # Global variables for components
 extractor = None
 analyzer = None
+enhanced_analyzer = None
 generator = None
 firebase_service = None
 
 
 def initialize_components():
     """Initialize application components."""
-    global extractor, analyzer, generator, firebase_service
+    global extractor, analyzer, enhanced_analyzer, generator, firebase_service
     
     youtube_api_key = os.getenv('YOUTUBE_API_KEY')
     google_ai_api_key = os.getenv('GOOGLE_AI_API_KEY')
@@ -52,6 +54,7 @@ def initialize_components():
     
     extractor = YouTubeExtractor(youtube_api_key)
     analyzer = ContentAnalyzer(google_ai_api_key, os.getenv('GEMINI_MODEL', 'gemini-1.5-flash'))
+    enhanced_analyzer = EnhancedContentAnalyzer(google_ai_api_key, os.getenv('GEMINI_MODEL', 'gemini-1.5-flash'))
     generator = ModuleGenerator('output')
     
     # Initialize Firebase (optional)
@@ -120,8 +123,7 @@ def process_playlist():
             # Store analysis in Firebase
             if firebase_service and firebase_service.is_connected() and playlist_id:
                 firebase_service.store_analysis_results(playlist_id, analysis_results)
-        
-        # Step 3: Generate learning modules
+          # Step 3: Generate learning modules
         course_package = generator.generate_learning_modules(analysis_results)
         
         # Return summary data
@@ -135,6 +137,54 @@ def process_playlist():
         
     except Exception as e:
         logger.error(f"Error processing playlist: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/generate_enhanced_course', methods=['POST'])
+def generate_enhanced_course():
+    """Generate comprehensive course structure using enhanced analyzer."""
+    try:
+        data = request.get_json()
+        playlist_url = data.get('playlist_url', '').strip()
+        max_videos = data.get('max_videos', 20)
+        
+        if not playlist_url:
+            return jsonify({'error': 'Playlist URL is required'}), 400
+        
+        if not validate_youtube_url(playlist_url):
+            return jsonify({'error': 'Invalid YouTube playlist URL'}), 400
+        
+        # Initialize components if not already done
+        if not extractor or not enhanced_analyzer:
+            initialize_components()
+        
+        # Process playlist
+        logger.info(f"Generating enhanced course for playlist: {playlist_url}")
+        
+        # Extract playlist ID for Firebase
+        from urllib.parse import urlparse, parse_qs
+        parsed_url = urlparse(playlist_url)
+        playlist_id = parse_qs(parsed_url.query).get('list', [None])[0]
+        
+        # Step 1: Extract playlist data
+        playlist_data = extractor.extract_playlist_data(playlist_url, max_videos)
+        
+        # Store playlist data in Firebase if available
+        if firebase_service and firebase_service.is_connected():
+            firebase_service.store_playlist(playlist_data)
+        
+        # Step 2: Generate comprehensive course structure
+        course_structure = enhanced_analyzer.generate_comprehensive_course(playlist_data)
+        
+        # Store enhanced course data in Firebase if available
+        if firebase_service and firebase_service.is_connected() and playlist_id:
+            firebase_service.store_analysis_results(playlist_id, course_structure)
+        
+        # Return complete course structure
+        return jsonify(course_structure)
+        
+    except Exception as e:
+        logger.error(f"Error generating enhanced course: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 
@@ -208,6 +258,7 @@ def health_check():
             'components': {
                 'youtube_extractor': extractor is not None,
                 'content_analyzer': analyzer is not None,
+                'enhanced_analyzer': enhanced_analyzer is not None,
                 'module_generator': generator is not None
             }
         })
@@ -369,6 +420,33 @@ def firebase_status():
             'service_available': False,
             'error': str(e)
         })
+
+
+@app.route('/api/playlists/<playlist_id>/links', methods=['GET'])
+def get_playlist_video_links(playlist_id):
+    """Get just the video links from a playlist."""
+    try:
+        if not firebase_service or not firebase_service.is_connected():
+            return jsonify({'error': 'Firebase not configured'}), 503
+        
+        video_links = firebase_service.get_playlist_video_links(playlist_id)
+        if not video_links:
+            return jsonify({'error': 'Playlist not found or no videos'}), 404
+        
+        # Create simple link list
+        simple_links = [video['url'] for video in video_links]
+        
+        return jsonify({
+            'success': True,
+            'playlist_id': playlist_id,
+            'video_links': simple_links,
+            'detailed_links': video_links,
+            'count': len(video_links)
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting playlist video links: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 if __name__ == '__main__':

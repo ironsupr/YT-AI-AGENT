@@ -7,12 +7,11 @@ class PlaylistGenerator {
         this.currentStep = 0;
         this.totalSteps = 3;
         this.initializeFirebase();
-    }
-
-    initializeElements() {
+    }    initializeElements() {
         // Input elements
         this.playlistUrlInput = document.getElementById('playlist-url');
         this.maxVideosSelect = document.getElementById('max-videos');
+        this.courseFormatSelect = document.getElementById('course-format');
         this.generateBtn = document.getElementById('generate-btn');
         
         // Status elements
@@ -158,11 +157,10 @@ class PlaylistGenerator {
         
         // Update input styling
         this.playlistUrlInput.className = `url-input ${type}`;
-    }
-
-    async generateModules() {
+    }    async generateModules() {
         const url = this.playlistUrlInput.value.trim();
         const maxVideos = parseInt(this.maxVideosSelect.value);
+        const courseFormat = this.courseFormatSelect.value;
 
         if (!url || this.generateBtn.disabled) {
             return;
@@ -171,7 +169,10 @@ class PlaylistGenerator {
         try {
             this.startProgress();
             
-            const response = await fetch('/api/process_playlist', {
+            // Choose API endpoint based on selected format
+            const endpoint = courseFormat === 'enhanced' ? '/api/generate_enhanced_course' : '/api/process_playlist';
+            
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -188,7 +189,13 @@ class PlaylistGenerator {
             }
 
             const data = await response.json();
-            this.showResults(data);
+            
+            // Handle different response formats
+            if (courseFormat === 'enhanced') {
+                this.showEnhancedResults(data);
+            } else {
+                this.showResults(data);
+            }
 
         } catch (error) {
             console.error('Generation error:', error);
@@ -371,9 +378,7 @@ class PlaylistGenerator {
         
         this.downloadMd.href = '/api/download/course_guide.md';
         this.downloadMd.download = `course_guide_${timestamp}.md`;
-    }
-
-    showError(message) {
+    }    showError(message) {
         // Hide progress section
         this.progressSection.style.display = 'none';
         
@@ -386,6 +391,207 @@ class PlaylistGenerator {
         
         // Reset generate button
         this.resetGenerateButton();
+    }
+
+    showEnhancedResults(data) {
+        // Hide progress section
+        this.progressSection.style.display = 'none';
+        
+        // Show results section
+        this.resultsSection.style.display = 'block';
+        this.resultsSection.classList.add('fade-in');
+        
+        // Populate enhanced course overview
+        this.populateEnhancedCourseOverview(data.course);
+        
+        // Populate enhanced modules preview
+        this.populateEnhancedModulesPreview(data);
+        
+        // Set up enhanced download links
+        this.setupEnhancedDownloadLinks(data);
+        
+        // Reset generate button
+        this.resetGenerateButton();
+    }
+
+    populateEnhancedCourseOverview(course) {
+        const prerequisites = course.prerequisites?.map(p => `<li>${this.escapeHtml(p)}</li>`).join('') || '';
+        const objectives = course.learningObjectives?.map(o => `<li>${this.escapeHtml(o)}</li>`).join('') || '';
+        const tags = course.tags?.map(t => `<span class="tag">${this.escapeHtml(t)}</span>`).join('') || '';
+        
+        const overview = `
+            <div class="enhanced-course-overview">
+                <div class="course-header">
+                    <img src="${course.thumbnail}" alt="${this.escapeHtml(course.title)}" class="course-thumbnail" 
+                         onerror="this.src='https://via.placeholder.com/640x360?text=Course+Thumbnail'">
+                    <div class="course-info">
+                        <div class="course-title">${this.escapeHtml(course.title)}</div>
+                        <p class="course-description">${this.escapeHtml(course.description)}</p>
+                        <div class="course-meta">
+                            <div class="meta-item">
+                                <span class="meta-icon">🏷️</span>
+                                <span>${this.escapeHtml(course.category)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">📈</span>
+                                <span>${this.escapeHtml(course.level)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">⏱️</span>
+                                <span>${course.estimatedHours} hours</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">📅</span>
+                                <span>${this.escapeHtml(course.duration)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">👨‍🏫</span>
+                                <span>${this.escapeHtml(course.instructor)}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-icon">💰</span>
+                                <span>$${course.price}</span>
+                            </div>
+                        </div>
+                        <div class="course-tags">
+                            ${tags}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="course-details">
+                    <div class="course-section">
+                        <h4>🎯 Learning Objectives</h4>
+                        <ul class="objectives-list">
+                            ${objectives}
+                        </ul>
+                    </div>
+                    
+                    <div class="course-section">
+                        <h4>📋 Prerequisites</h4>
+                        <ul class="prerequisites-list">
+                            ${prerequisites}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        this.courseOverview.innerHTML = overview;
+    }
+
+    populateEnhancedModulesPreview(data) {
+        const modules = data.modules || [];
+        const assignments = data.assignments || [];
+        const finalExam = data.finalExam;
+        
+        if (modules.length === 0) {
+            this.modulesPreview.innerHTML = '<p>No modules generated.</p>';
+            return;
+        }
+
+        let html = '<div class="enhanced-modules-preview">';
+        html += '<h3>📖 Course Structure</h3>';
+        
+        // Modules
+        html += '<div class="modules-section">';
+        modules.forEach((module, index) => {
+            const lessons = module.lessons || [];
+            html += `
+                <div class="enhanced-module-card">
+                    <div class="module-header">
+                        <div class="module-title">
+                            ${this.escapeHtml(module.title)}
+                        </div>
+                        <div class="module-meta">
+                            <span>📅 ${this.escapeHtml(module.duration)}</span>
+                            <span>📹 ${lessons.length} lessons</span>
+                        </div>
+                    </div>
+                    <div class="module-description">
+                        ${this.escapeHtml(module.description)}
+                    </div>
+                    <div class="lessons-preview">
+                        ${lessons.map(lesson => `
+                            <div class="lesson-item">
+                                <span class="lesson-type">${this.getLessonTypeIcon(lesson.type)}</span>
+                                <span class="lesson-title">${this.escapeHtml(lesson.title)}</span>
+                                <span class="lesson-duration">${this.escapeHtml(lesson.duration)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        // Assignments
+        if (assignments.length > 0) {
+            html += '<div class="assignments-section">';
+            html += '<h4>📝 Assignments</h4>';
+            assignments.forEach(assignment => {
+                html += `
+                    <div class="assignment-card">
+                        <div class="assignment-title">${this.escapeHtml(assignment.title)}</div>
+                        <div class="assignment-description">${this.escapeHtml(assignment.description)}</div>
+                        <div class="assignment-meta">
+                            <span>📅 Due: ${new Date(assignment.dueDate).toLocaleDateString()}</span>
+                            <span>🎯 ${assignment.points} points</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+        
+        // Final Exam
+        if (finalExam) {
+            html += '<div class="final-exam-section">';
+            html += '<h4>🎓 Final Exam</h4>';
+            html += `
+                <div class="exam-card">
+                    <div class="exam-title">${this.escapeHtml(finalExam.title)}</div>
+                    <div class="exam-description">${this.escapeHtml(finalExam.description)}</div>
+                    <div class="exam-meta">
+                        <span>⏱️ ${finalExam.timeLimit} minutes</span>
+                        <span>📊 ${finalExam.passingScore}% passing score</span>
+                        <span>❓ ${finalExam.questions?.length || 0} questions</span>
+                    </div>
+                </div>
+            `;
+            html += '</div>';
+        }
+        
+        html += '</div>';
+        this.modulesPreview.innerHTML = html;
+    }
+
+    getLessonTypeIcon(type) {
+        const icons = {
+            'video': '🎥',
+            'text': '📖',
+            'quiz': '❓',
+            'project': '🛠️'
+        };
+        return icons[type] || '📄';
+    }
+
+    setupEnhancedDownloadLinks(data) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        
+        // Create downloadable JSON content
+        const jsonContent = JSON.stringify(data, null, 2);
+        const jsonBlob = new Blob([jsonContent], { type: 'application/json' });
+        const jsonUrl = URL.createObjectURL(jsonBlob);
+        
+        this.downloadJson.href = jsonUrl;
+        this.downloadJson.download = `enhanced_course_${timestamp}.json`;
+        
+        // For HTML and MD, we'll use the existing endpoints for now
+        this.downloadHtml.href = '/api/download/course_guide.html';
+        this.downloadHtml.download = `enhanced_course_${timestamp}.html`;
+        
+        this.downloadMd.href = '/api/download/course_guide.md';
+        this.downloadMd.download = `enhanced_course_${timestamp}.md`;
     }
 
     resetForm() {
@@ -602,6 +808,9 @@ class PlaylistGenerator {
                             <p><strong>Videos:</strong> ${playlist.video_count}</p>
                             <p><strong>Created:</strong> ${new Date(playlist.created_at.seconds * 1000).toLocaleDateString()}</p>
                             <a href="${playlist.url}" target="_blank" class="playlist-link">🔗 Open on YouTube</a>
+                            <button class="action-btn secondary" onclick="playlistGenerator.showVideoLinks('${playlist.playlist_id}')">
+                                🔗 Show Video Links
+                            </button>
                         </div>
                     </div>
                     ${analysis ? `
@@ -625,6 +834,56 @@ class PlaylistGenerator {
         `;
         
         document.body.appendChild(modal);
+    }
+
+    async showVideoLinks(playlistId) {
+        try {
+            const response = await fetch(`/api/playlists/${playlistId}/links`);
+            const data = await response.json();
+
+            if (data.success) {
+                this.displayVideoLinksModal(playlistId, data.video_links, data.detailed_links);
+            } else {
+                throw new Error(data.error || 'Failed to load video links');
+            }
+        } catch (error) {
+            console.error('Error getting video links:', error);
+            this.showErrorMessage('Failed to load video links');
+        }
+    }
+
+    displayVideoLinksModal(playlistId, links, detailedLinks) {
+        const modal = document.createElement('div');
+        modal.className = 'video-links-modal';
+        
+        let linksHtml = detailedLinks.map((video, index) => `<li><a href="${video.url}" target="_blank">${index + 1}. ${this.escapeHtml(video.title)}</a></li>`).join('');
+
+        modal.innerHTML = `
+            <div class="video-links-modal-content">
+                <div class="video-links-modal-header">
+                    <h3>Video Links for ${this.escapeHtml(playlistId)}</h3>
+                    <button class="close-modal" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                </div>
+                <div class="video-links-modal-body">
+                    <p>Found ${links.length} video links.</p>
+                    <textarea class="links-textarea" readonly>${links.join('\n')}</textarea>
+                    <button class="action-btn primary" onclick="playlistGenerator.copyLinksToClipboard(this)">Copy Links</button>
+                    <h4>Video List</h4>
+                    <ul class="links-list">${linksHtml}</ul>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    copyLinksToClipboard(button) {
+        const textarea = button.parentElement.querySelector('.links-textarea');
+        textarea.select();
+        navigator.clipboard.writeText(textarea.value);
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+            button.textContent = 'Copy Links';
+        }, 2000);
     }
 
     // Helper methods for Firebase UI

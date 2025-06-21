@@ -409,3 +409,44 @@ class FirebaseService:
         except Exception as e:
             logger.error(f"Error getting playlist summary: {e}")
             return None
+        
+    def get_playlist_video_links(self, playlist_id: str) -> List[Dict]:
+        """Get all video links from a playlist.
+        
+        Args:
+            playlist_id: YouTube playlist ID
+            
+        Returns:
+            List of video information with links
+        """
+        if not self.is_connected():
+            logger.warning("Firebase not connected, cannot retrieve video links")
+            return []
+        
+        try:
+            # Get videos subcollection
+            playlist_ref = self.db.collection('playlists').document(playlist_id)
+            videos_ref = playlist_ref.collection('videos')
+            videos_docs = videos_ref.order_by('position').stream()
+            
+            video_links = []
+            for video_doc in videos_docs:
+                video_data = video_doc.to_dict()
+                video_info = {
+                    'position': video_data.get('position', 0),
+                    'video_id': video_data['video_id'],
+                    'title': video_data['title'],
+                    'url': video_data['url'],
+                    'thumbnail_url': video_data.get('thumbnail_url', ''),
+                    'duration': video_data.get('duration', ''),
+                    'published_at': video_data.get('published_at', ''),
+                    'has_transcript': video_data.get('has_transcript', False)
+                }
+                video_links.append(video_info)
+            
+            logger.info(f"Retrieved {len(video_links)} video links for playlist {playlist_id}")
+            return video_links
+            
+        except Exception as e:
+            logger.error(f"Error retrieving video links: {e}")
+            return []

@@ -28,9 +28,7 @@
                         required
                     >
                     <div id="url-validation" class="validation-message"></div>
-                </div>
-
-                <div class="settings-group">
+                </div>                <div class="settings-group">
                     <div class="setting-item">
                         <label for="max-videos" class="setting-label">
                             Maximum Videos
@@ -41,6 +39,17 @@
                             <option value="30">30 videos</option>
                             <option value="50">50 videos</option>
                         </select>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="course-format" class="setting-label">
+                            Course Format
+                        </label>
+                        <select id="course-format" class="setting-select">
+                            <option value="standard">Standard Learning Modules</option>
+                            <option value="enhanced" selected>Enhanced Course Structure</option>
+                        </select>
+                        <small class="setting-description">Enhanced format includes detailed lessons, quizzes, assignments, and final exam</small>
                     </div>
                 </div>
 
@@ -135,6 +144,21 @@
                     <h3>❌ Oops! Something went wrong</h3>
                     <p id="error-text"></p>
                     <button id="retry-btn" class="retry-btn">Try Again</button>
+                </div>
+            </div>
+
+            <!-- Video Links Modal -->
+            <div id="video-links-modal" class="modal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modal-playlist-title">Playlist Video Links</h3>
+                        <button class="modal-close" id="modal-close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="modal-links-loading" class="loading-state">Loading links...</div>
+                        <ul id="modal-links-list" class="links-list"></ul>
+                        <div id="modal-links-empty" class="empty-state" style="display: none;">No links found.</div>
+                    </div>
                 </div>
             </div>
         </main>
