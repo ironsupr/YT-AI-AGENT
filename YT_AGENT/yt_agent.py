@@ -290,9 +290,7 @@ class CourseGenerator:
             "learningObjectives": ["List of 4-6 learning objectives"],
             "isPublished": true,
             "estimatedHours": "Total estimated hours (numeric)"
-        }}
-
-        Make it professional and comprehensive. Return ONLY the JSON object.
+        }}        Make it professional and comprehensive. Return ONLY the JSON object.
         """
         
         try:
@@ -302,9 +300,9 @@ class CourseGenerator:
             )
             
             content = response.text.strip()
-            json_match = re.search(r'\{.*\}', content, re.DOTALL)
-            if json_match:
-                course_info = json.loads(json_match.group())
+            parsed_json = self._parse_json_from_response(content)
+            if parsed_json:
+                course_info = parsed_json
                 
                 # Ensure thumbnail URL
                 if not course_info.get('thumbnail') or course_info['thumbnail'] == 'placeholder':
@@ -428,8 +426,7 @@ class CourseGenerator:
                 }}
             ]
         }}
-        
-        Make lessons engaging and educational. Include at least one quiz per module.
+          Make lessons engaging and educational. Include at least one quiz per module.
         Return ONLY the JSON object.
         """
         
